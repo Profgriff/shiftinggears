@@ -107,6 +107,29 @@ export default {
       const me = await getSessionStaff(request, env);
       if (!me) return json({ error: 'Not authenticated' }, 401);
 
+      // ── Self-service: update MY OWN display name ──
+      if (path === '/api/me/name' && request.method === 'PUT') {
+        const { name } = await request.json();
+        if (!name || !name.trim()) return json({ error: 'name required' }, 400);
+        await env.DB.prepare('UPDATE staff SET name = ? WHERE id = ?').bind(name.trim(), me.id).run();
+        return json({ ok: true, name: name.trim() });
+      }
+
+      // ── Self-service: change MY OWN PIN (must know the current one) ──
+      if (path === '/api/me/pin' && request.method === 'PUT') {
+        const { currentPin, newPin } = await request.json();
+        if (!currentPin || !newPin || newPin.length !== 6) {
+          return json({ error: 'currentPin and a 6-digit newPin are required' }, 400);
+        }
+        const currentHash = await sha256Hex(currentPin);
+        if (currentHash !== me.pin_hash) {
+          return json({ error: 'Current PIN is incorrect' }, 401);
+        }
+        const newHash = await sha256Hex(newPin);
+        await env.DB.prepare('UPDATE staff SET pin_hash = ? WHERE id = ?').bind(newHash, me.id).run();
+        return json({ ok: true });
+      }
+
       if (path === '/api/auth/logout' && request.method === 'POST') {
         const auth = request.headers.get('Authorization') || '';
         const token = auth.slice(7);
