@@ -1,0 +1,8 @@
+name = "roc-scheduler"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "roc-scheduler-db"
+database_id = "PLACEHOLDER_WILL_BE_REPLACED_BY_REAL_ID"
